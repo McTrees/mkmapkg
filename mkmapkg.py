@@ -9,6 +9,9 @@ mkmapkg
 from argparse import ArgumentParser, FileType
 import sys
 import json
+import logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logger = logging.getLogger("mkmapkg")
 
 import lxml
 from bs4 import BeautifulSoup
@@ -31,17 +34,38 @@ def get_soup(path):
         with open(path, "r") as fp:
             xmlstr = fp.read()
     except FileNotFoundError:
-        print("Error: file {} does not exist.".format(path), file=sys.stderr)
+        logger.error("file %s does not exist.", path)
         sys.exit(1)
+    except UnicodeDecodeError:
+        logger.error("a unicode decoding error occurred when opening file %s.", path)
+        sys.exit(1)
+    except:
+        logger.error("an error occured when opening file %s.", path)
     soup = BeautifulSoup(xmlstr, "xml")
     if soup.graphml is None:
-        print("Error: file {} is not a valid graphml file.".format(path), file=sys.stderr)
+        logger.error("file %s is not a valid graphml document.", path)
         sys.exit(1)
+    return soup
 
+
+def create_node_data(soup):
+    for edge in soup("edge"):
+        logger.debug("processing edge %s", edge['id'])
+        first_node_id = edge['source']
+        second_node_id = edge['target']
+        first_node = soup("node", id=first_node_id)
+        if first_node is None:
+            logger.warning("couldn't find a node with id %s (from edge %s)", first_node_id, edge['id'])
+        second_node = soup("node", id=second_node_id)
+        if first_node is None:
+            logger.warning("couldn't find a node with id %s (from edge %s)", second_node_id, edge['id'])
 
 def main():
     args = parse_args()
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
     soup = get_soup(args.graphml)
+    node_data = create_node_data(soup)
 
 
 if __name__ == "__main__":
