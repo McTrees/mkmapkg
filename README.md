@@ -29,3 +29,6 @@ For instance, to create a mapkg file from the graphml file `info.graphml`, with 
 ```
 mkmapkg.py info.graphml image.png -o info.mapkg -w
 ```
+
+# License
+GPL-3.0; see LICENSE file.
